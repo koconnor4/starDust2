@@ -54,7 +54,7 @@ SubClassDict_PSNID = {
            'ia': {'salt2-extended':'Ia'},
 }
 
-from . import *
+from sncosmo import *
 import time
 import numpy as np
 from astropy.io import ascii
@@ -229,7 +229,7 @@ def get_evidence(sn=testsnIa, modelsource='salt2',
     """
     import os
     from scipy import interpolate, integrate
-    from . import _deprecated, fitting, Model, CCM89Dust
+    from sncosmo import _deprecated, fitting, Model, CCM89Dust
     import time
     tstart = time.time()
 
