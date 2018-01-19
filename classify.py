@@ -450,7 +450,46 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     :param verbose:
     :return:
     """
-    
+    import multiprocessing
+    from multiprocessing import Pool
+
+    def _parellelize(modelsource):
+        '''
+        if verbose >1:
+            dt = time.time() - tstart
+            print('------------------------------')
+            print("model: %s  dt=%i sec" % (modelsource, dt))
+        sn, res, fit, priorfn = get_evidence(
+            sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
+            t0_range=t0_range, zminmax=zminmax,
+            npoints=npoints, maxiter=maxiter, verbose=max(0, verbose - 1))
+
+        if nsteps_pdf:
+            pdf = get_marginal_pdfs(res, nbins=nsteps_pdf,
+                                    verbose=max(0, verbose - 1))
+        else:
+            pdf = None
+        del fit._source
+        outdict[modelsource] = {'sn': sn, 'res': res, 'fit': fit,
+                                'pdf': pdf, 'priorfn': priorfn}
+
+        if res.logz>bestlogz :
+            outdict['bestmodel'] = modelsource
+            bestlogz = res.logz
+
+        # multiply the model evidence by the sub-type prior
+        if modelsource in iimodelnames:
+            logprior = logpriordict['ii']
+            logz['II'].append(logprior + res.logz )
+        elif modelsource in ibcmodelnames:
+            logprior = logpriordict['ibc']
+            logz['Ibc'].append(logprior + res.logz)
+        elif modelsource in iamodelnames:
+            logprior = logpriordict['ia']
+            logz['Ia'].append(logprior + res.logz)
+        return (tuple(outdict))
+    '''
+        return 0
     print zhost
     print zhosterr
     print zminmax
@@ -483,39 +522,14 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
 
     logz = {'Ia': [], 'II': [], 'Ibc': []}
     bestlogz = -np.inf
-    for modelsource in allmodelnames:
-        if verbose >1:
-            dt = time.time() - tstart
-            print('------------------------------')
-            print("model: %s  dt=%i sec" % (modelsource, dt))
-        sn, res, fit, priorfn = get_evidence(
-            sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
-            t0_range=t0_range, zminmax=zminmax,
-            npoints=npoints, maxiter=maxiter, verbose=max(0, verbose - 1))
 
-        if nsteps_pdf:
-            pdf = get_marginal_pdfs(res, nbins=nsteps_pdf,
-                                    verbose=max(0, verbose - 1))
-        else:
-            pdf = None
-        outdict[modelsource] = {'sn': sn, 'res': res, 'fit': fit,
-                                'pdf': pdf, 'priorfn': priorfn}
-
-        if res.logz>bestlogz :
-            outdict['bestmodel'] = modelsource
-            bestlogz = res.logz
-
-        # multiply the model evidence by the sub-type prior
-        if modelsource in iimodelnames:
-            logprior = logpriordict['ii']
-            logz['II'].append(logprior + res.logz )
-        elif modelsource in ibcmodelnames:
-            logprior = logpriordict['ibc']
-            logz['Ibc'].append(logprior + res.logz)
-        elif modelsource in iamodelnames:
-            logprior = logpriordict['ia']
-            logz['Ia'].append(logprior + res.logz)
-
+    #where for loop used to be need to 
+    p = Pool(processes=multiprocessing.cpu_count())
+    outdictarr = []
+    
+    for x in p.imap_unordered(_parellelize,allmodelnames):
+        outdictarr.append(x)
+    p.close()
     # sum up the evidence from all models for each sn type
     logztype = {}
     for modelsource in ['II', 'Ibc', 'Ia']:
@@ -537,7 +551,6 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     outdict['logztype'] = logztype
     outdict['logzall'] = logzall
     return outdict
-
 
 def plot_maxlike_fit( fitdict, **kwarg ):
     sn = fitdict['sn']

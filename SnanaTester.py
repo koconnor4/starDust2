@@ -58,17 +58,18 @@ while(True):
 			#print "noSteps: %d", numberOfSteps;
 			#print "noClass: %d", counter;
 			
+			example_classification = classify.classify(data, zhost=metadata['HOST_GALAXY_PHOTO-Z'], zhosterr=zerror, zminmax=[metadata['HOST_GALAXY_PHOTO-Z'] - (2*zerror), metadata['HOST_GALAXY_PHOTO-Z'] + (2*zerror)],
+			npoints=numberOfPoints, maxiter=maxIter, nsteps_pdf=numberOfSteps, templateset=template,verbose=0)
+			classWorked = True
+			'''
 			try:
-				example_classification = classify.classify(data, zhost=metadata['HOST_GALAXY_PHOTO-Z'], zhosterr=zerror, zminmax=[metadata['HOST_GALAXY_PHOTO-Z'] - (2*zerror), metadata['HOST_GALAXY_PHOTO-Z'] + (2*zerror)],
-				npoints=numberOfPoints, maxiter=maxIter, nsteps_pdf=numberOfSteps, templateset=template,verbose=0)
-				classWorked = True
 			except:
 				outputFile = open(theOutputFile,"a+")
 				outputFile.write("0.00\t0.00\t0.00\t0\t0\n") #if there's an error all values to be 0
 				outputFile.close()
 				counter += 1
 				print("error:", sys.exc_info()[0])
-			
+			'''
 			#print example_classification['bestmodel']
 			time1 = time.time() - start
 			#print ("classification time: "),
