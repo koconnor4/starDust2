@@ -26,7 +26,7 @@ def _parWrap(args):
         print('something')
         return(None)
 
-def __pickleable(obj):
+def _pickleable(obj):
     try:
         with open(r"temp.pickle", "wb") as output_file:
             cPickle.dump(obj, output_file)
