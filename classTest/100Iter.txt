@@ -1,2 +1,0 @@
-SNID	1aProb	11Prob	1bcProb	realtype	ClassTime
-87829	0.00	0.00	1.00	1	68.85
