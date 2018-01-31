@@ -1,4 +1,4 @@
-import multiprocessing,cPickle,os,warnings,sys
+import multiprocessing,pickle,os,warnings,sys
 from multiprocessing import Pool
 import numpy as np
 
@@ -27,19 +27,22 @@ def _parWrap(args):
         return(None)
 
 def _pickleable(obj):
+    print("printing")
+    print(obj)
     try:
         with open(r"temp.pickle", "wb") as output_file:
-            cPickle.dump(obj, output_file)
-        pickle=True
-    except:
-        pickle=False
+            pickle.dump(obj, output_file)
+        pickle1=True
+    except RuntimeError:
+        pickle1=False
     try:
         os.remove('temp.pickle')
     except:
         pass
-    return pickle
+    return pickle1
 
 def parReturn(toReturn):
+    print("something")
     name=False
     if isinstance(toReturn,dict):
         final=dict([])

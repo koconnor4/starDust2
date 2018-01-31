@@ -1,0 +1,31 @@
+maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	maxIter: 5000
+npts: 20
+SNID	1aProb	11Prob	1bcProb	realtype	ClassTime	bestModel
+41	

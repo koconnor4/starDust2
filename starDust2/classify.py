@@ -1,4 +1,5 @@
 import parallelize
+import sys
 # Dictionary of sncosmo CCSN model names and their corresponding SN sub-type
 SubClassDict_SNANA = {    'ii':{    'snana-2007ms':'IIP',  # sdss017458 (Ic in SNANA)
                                     'snana-2004hx':'IIP',  # sdss000018 PSNID
@@ -439,7 +440,7 @@ def _parallel(args):
 
     modelsource,verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates=args
 
-
+    print("other")
     sn, res, fit, priorfn = get_evidence(
         sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
         t0_range=t0_range, zminmax=zminmax,
@@ -475,12 +476,7 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     :param maxiter:
     :param verbose:
     :return:
-    """
-
-    print zhost
-    print zhosterr
-    print zminmax
-    
+    """    
     tstart = time.time()
     if templateset.lower() == 'psnid':
         SubClassDict = SubClassDict_PSNID
@@ -492,6 +488,7 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     iamodelnames = SubClassDict['ia'].keys()
 
     outdict = {}
+    modelProbs = SubClassDict.copy()
     allmodelnames = np.append(np.append(iamodelnames, ibcmodelnames),
                               iimodelnames)
     if excludetemplates:
@@ -508,41 +505,97 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
         }
     logz = {'Ia': [], 'II': [], 'Ibc': []}
     bestlogz = -np.inf
-
-
+#-------------------------------------------------------------------------------
     '''
-    if res.logz>bestlogz :
-        outdict['bestmodel'] = modelsource
-        bestlogz = res.logz
+    #nonparallelize code
+    for modelsource in allmodelnames:
+        if verbose >1:
+            dt = time.time() - tstart
+            print('------------------------------')
+            print("model: %s  dt=%i sec" % (modelsource, dt))
+        sn, res, fit, priorfn = get_evidence(
+            sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
+            t0_range=t0_range, zminmax=zminmax,
+            npoints=npoints, maxiter=maxiter, verbose=max(0, verbose - 1))
 
-    # multiply the model evidence by the sub-type prior
-    if modelsource in iimodelnames:
-        logprior = logpriordict['ii']
-        logz['II'].append(logprior + res.logz )
-    elif modelsource in ibcmodelnames:
-        logprior = logpriordict['ibc']
-        logz['Ibc'].append(logprior + res.logz)
-    elif modelsource in iamodelnames:
-        logprior = logpriordict['ia']
-        logz['Ia'].append(logprior + res.logz)
-    '''
-    import sys
+        if nsteps_pdf:
+            pdf = get_marginal_pdfs(res, nbins=nsteps_pdf,
+                                    verbose=max(0, verbose - 1))
+        else:
+            pdf = None
+        outdict[modelsource] = {'sn': sn, 'res': res, 'fit': fit,
+                                'pdf': pdf, 'priorfn': priorfn}
+        if res.logz>bestlogz :
+            outdict['bestmodel'] = modelsource
+            bestlogz = res.logz
 
+        # multiply the model evidence by the sub-type prior
+        if modelsource in iimodelnames:
+            logprior = logpriordict['ii']
+            logz['II'].append(logprior + res.logz )
+            modelProbs['ii'][modelsource] = res.logz
+        elif modelsource in ibcmodelnames:
+            logprior = logpriordict['ibc']
+            logz['Ibc'].append(logprior + res.logz)
+            modelProbs['ibc'][modelsource] = res.logz
+        elif modelsource in iamodelnames:
+            logprior = logpriordict['ia']
+            logz['Ia'].append(logprior + res.logz)
+            modelProbs['ia'][modelsource] = res.logz
+        
+    if(verbose):
+        import pprint
+        print(pprint.pprint(modelProbs))
 
-    results=parallelize.foreach(allmodelnames,_parallel,[verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates])
-    print('------------------------------')
-    dt = time.time() - tstart
-    print("dt=%i sec" %dt)
-    print(results.keys())
-    sys.exit()
-# sum up the evidence from all models for each sn type
+    # sum up the evidence from all models for each sn type
     logztype = {}
     for modelsource in ['II', 'Ibc', 'Ia']:
         logztype[modelsource] = logz[modelsource][0]
         for i in range(1, len(logz[modelsource])):
             logztype[modelsource] = np.logaddexp(
                 logztype[modelsource], logz[modelsource][i])
+    
+    '''
+#-------------------------------------------------------------------------------
+    #parallelize code
+    res=parallelize.foreach(allmodelnames,_parallel,[verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates])
+    print('------------------------------')
+    dt = time.time() - tstart
+    print("dt=%i sec" %dt)
+    
+    for modelsource in allmodelnames:
+        outdict[modelsource] = {'sn': res[modelsource]['sn'], 'res': res[modelsource]['res'],
+                                'pdf': res[modelsource]['pdf']}
+        if res[modelsource]['res']['logz']>bestlogz :
+            outdict['bestmodel'] = modelsource
+            bestlogz = res[modelsource]['res']['logz']
 
+        # multiply the model evidence by the sub-type prior
+        if modelsource in iimodelnames:
+            logprior = logpriordict['ii']
+            logz['II'].append(logprior + res[modelsource]['res']['logz'] )
+            modelProbs['ii'][modelsource] = res[modelsource]['res']['logz']
+        elif modelsource in ibcmodelnames:
+            logprior = logpriordict['ibc']
+            logz['Ibc'].append(logprior + res[modelsource]['res']['logz'])
+            modelProbs['ibc'][modelsource] = res[modelsource]['res']['logz']
+        elif modelsource in iamodelnames:
+            logprior = logpriordict['ia']
+            logz['Ia'].append(logprior + res[modelsource]['res']['logz'])
+            modelProbs['ia'][modelsource] = res[modelsource]['res']['logz']
+        
+    if(verbose):
+        import pprint
+        print(pprint.pprint(modelProbs))
+
+    # sum up the evidence from all models for each sn type
+    logztype = {}
+    for modelsource in ['II', 'Ibc', 'Ia']:
+        logztype[modelsource] = logz[modelsource][0]
+        for i in range(1, len(logz[modelsource])):
+            logztype[modelsource] = np.logaddexp(
+                logztype[modelsource], logz[modelsource][i])
+#-------------------------------------------------------------------------------
     # define the total evidence (final denominator in Bayes theorem) and then
     # the classification probabilities
     logzall = np.logaddexp(np.logaddexp(
@@ -555,6 +608,14 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     outdict['pII'] = pII
     outdict['logztype'] = logztype
     outdict['logzall'] = logzall
+
+    if(verbose):
+        print("pIa: "),
+        print(pIa)
+        print("pIbc: "),
+        print(pIbc)
+        print("pII: "),
+        print(pII)
     return outdict
 
 def plot_maxlike_fit( fitdict, **kwarg ):
@@ -625,3 +686,28 @@ def plot_color_vs_redshift(modelname, bandpass1, bandpass2, t=0,
     the model t0... typically peak brightness) as a function of
     redshift over the given zrange.
     """
+
+def testClassification():
+    import imp
+    read_des_datfile = imp.load_source("read_des_datfile","classTest/read_des_datfile.py")
+
+    testSNfile = "classTest/simulatedChallange/DES_BLIND+HOSTZ/DES_SN000041.DAT"
+    zerror = getTheZerr(testSNfile) #this is because the snana read strips the zerror
+    metadata, data = read_des_datfile.read_des_datfile(testSNfile)
+    theID = metadata["SNID"]
+
+    print("Classifying, this may take awhile...")
+    test_out = classify(data, zhost=metadata['HOST_GALAXY_PHOTO-Z'], zhosterr=zerror, zminmax=[metadata['HOST_GALAXY_PHOTO-Z'] - (2*zerror), metadata['HOST_GALAXY_PHOTO-Z'] + (2*zerror)],
+                                npoints=20, maxiter=5000, nsteps_pdf=1000, templateset='snana',verbose=1)
+
+    print("Successful classification!")
+
+def getTheZerr(theFile): #gets the z error for the host galaxy
+	with open(theFile) as f:
+		content = f.readlines()
+	amatch = [s for s in content if "HOST_GALAXY_PHOTO-Z" in s]
+	thematch = amatch[0].split("+-")
+	thereturn = float(thematch[1].strip())
+	return thereturn
+
+testClassification()

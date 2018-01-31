@@ -2,6 +2,7 @@ import numpy as np
 import sncosmo
 from astropy.table import Table, Column
 
+
 def read_des_datfile(datafile):
     """ Read in a SN data table that was written in the old 
     SNANA format, modify it, and return an astropy Table object 
@@ -11,7 +12,8 @@ def read_des_datfile(datafile):
         datafile, default_tablename='OBS')
     sntable = standardize_snana_data(datatable['OBS'])
     return metadata, sntable
-    
+
+
 def standardize_data(data):
     """Standardize photometric data by converting to a structured numpy array
     with standard column names (if necessary) and sorting entries in order of
@@ -39,8 +41,8 @@ def standardize_data(data):
 
         # Check if the data already complies with what we want
         # (correct column names & ordered by date)
-        if (set(colnames) == set(PHOTDATA_ALIASES.keys()) and
-                np.all(np.ediff1d(data['time']) >= 0.)):
+        if (set(colnames) == set(PHOTDATA_ALIASES.keys())
+                and np.all(np.ediff1d(data['time']) >= 0.)):
             return data
 
     elif isinstance(data, dict):
@@ -80,38 +82,40 @@ def standardize_data(data):
         new_data.sort(order=['time'])
 
     return new_data
- 
-   
+
+
 def standardize_snana_data(sn, headfile=None):
     """ Modify a SN data table that was written in the old 
     SNANA format so that it can be handled by sncosmo
     """
     if 'MJD' in sn.colnames:
-	    sn['MJD'].name = 'time'
-	    timedata = sn['time']
-	    timecolumn = Column(data=timedata, name='time')
-	
+        sn['MJD'].name = 'time'
+        timedata = sn['time']
+        timecolumn = Column(data=timedata, name='time')
+
     if 'FLT' in sn.colnames and 'FILTER' not in sn.colnames:
-        filterdata = np.where(sn['FLT']=='g','desg',
-                              np.where(sn['FLT']=='r','desr',
-                              np.where(sn['FLT']=='i','desi',
-                              np.where(sn['FLT']=='z','desz','?'))))
+        filterdata = np.where(sn['FLT'] == 'g', 'desg',
+                              np.where(sn['FLT'] == 'r', 'desr',
+                                       np.where(sn['FLT'] == 'i', 'desi',
+                                                np.where(
+                                                    sn['FLT'] == 'z', 'desz',
+                                                    '?'))))
         filtercolumn = Column(data=filterdata, name='band')
         sn.add_column(filtercolumn)
         sn.remove_column('FLT')
         sn.remove_column('FIELD')
     if 'MAG' in sn.colnames:
-		sn.remove_column('MAG')
-		sn.remove_column('MAGERR')
-	
+        sn.remove_column('MAG')
+        sn.remove_column('MAGERR')
+
     if 'ZEROPT' in sn.colnames and 'ZPT' not in sn.colnames:
         sn['ZEROPT'].name = 'zp'
     if 'ZPT' not in sn.colnames:
         sn['zp'] = 27.5 * np.ones(len(sn))
-        
+
     if 'FLUXCAL' in sn.colnames and 'FLUX' not in sn.colnames:
-        fluxdata = sn['FLUXCAL'] * 10 ** (0.4 * (sn['zp'] - 27.5))
-        fluxerrdata = sn['FLUXCALERR'] * 10 ** (0.4 * (sn['zp'] - 27.5))
+        fluxdata = sn['FLUXCAL'] * 10**(0.4 * (sn['zp'] - 27.5))
+        fluxerrdata = sn['FLUXCALERR'] * 10**(0.4 * (sn['zp'] - 27.5))
         fluxcolumn = Column(data=fluxdata, name='flux')
         sn.add_column(fluxcolumn)
         fluxerrcolumn = Column(data=fluxerrdata, name='fluxerr')
@@ -119,12 +123,11 @@ def standardize_snana_data(sn, headfile=None):
         sn.remove_column('FLUXCAL')
         sn.remove_column('FLUXCALERR')
         sn.remove_column('zp')
-        
+
     if 'ZEROPT' in sn.colnames and 'ZPT' not in sn.colnames:
         sn['ZEROPT'].name = 'zp'
     if 'ZPT' not in sn.colnames:
         sn['zp'] = 27.5 * np.ones(len(sn))
-
 
     if 'MAGSYS' not in sn.colnames:
         magsysdata = np.ones(len(sn), dtype='S2')
@@ -134,7 +137,7 @@ def standardize_snana_data(sn, headfile=None):
 
     #snstd = sncosmo._deprecated.standardize_data(sn)
     snstd = sn
-    
+
     if headfile:
         sn.meta['HEADFILE'] = headfile
         sn.meta['PHOTFILE'] = headfile.replace('HEAD', 'PHOT')

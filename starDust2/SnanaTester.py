@@ -14,7 +14,7 @@ p1bcarr = []
 dataArr = []
 
 numberOfSteps = 1000
-numberOfClassifications = 1000
+numberOfClassifications = 1
 numberOfPoints = 20
 maxIter = 5000
 template = 'snana'
@@ -40,7 +40,7 @@ while(True):
 	counter = numberOfClassifications
 	for filename in sorted(os.listdir(directory)):
 		if "SN" in filename and filename.endswith(".DAT"):
-			print filename
+			print (filename)
 			counter -= 1
 			inputFile = os.path.join(directory, filename)
 			zerror = getTheZerr(inputFile) #this is because the snana read strips the zerror
