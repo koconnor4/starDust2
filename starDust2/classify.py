@@ -438,9 +438,9 @@ def plot_marginal_pdfs( res, nbins=101, **kwargs):
 
 def _parallel(args):
 
+    print("other")
     modelsource,verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates=args
 
-    print("other")
     sn, res, fit, priorfn = get_evidence(
         sn, modelsource=modelsource, zhost=zhost, zhosterr=zhosterr,
         t0_range=t0_range, zminmax=zminmax,
