@@ -23,17 +23,17 @@ def _parWrap(args):
     try:
         return(func(newArgs))
     except RuntimeError:
-        print('something')
+        #print('something')
         return(None)
 
 def _pickleable(obj):
-    print("printing")
-    print(obj)
+    #print("printing")
+    #print(obj)
     try:
         with open(r"temp.pickle", "wb") as output_file:
             pickle.dump(obj, output_file)
         pickle1=True
-    except RuntimeError:
+    except:
         pickle1=False
     try:
         os.remove('temp.pickle')

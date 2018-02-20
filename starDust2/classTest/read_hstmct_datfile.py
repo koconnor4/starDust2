@@ -125,9 +125,8 @@ def standardize_snana_data(sn, headfile=None):
 
 
     if 'MAGSYS' not in sn.colnames:
-        magsysdata = np.ones(len(sn), dtype='S2')
-        magsysdata.fill('AB')
-        magsyscol = Column(data=magsysdata, name='zpsys')
+        abVals = ['ab' for i in range(len(sn))]
+        magsyscol = Column(data=abVals, name='zpsys')
         sn.add_column(magsyscol)
 
     #snstd = sncosmo._deprecated.standardize_data(sn)
