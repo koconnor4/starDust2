@@ -42,7 +42,7 @@ def _pickleable(obj):
     return pickle1
 
 def parReturn(toReturn):
-    print("something")
+    #print("something")
     name=False
     if isinstance(toReturn,dict):
         final=dict([])

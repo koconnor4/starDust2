@@ -316,18 +316,11 @@ def get_evidence(sn=testsnIa, modelsource='salt2',
             priorfn = { 'rv':rvprior }
 
     model.set(z=np.mean(zminmax))
-    #print ("fit1: ", time.time())
-    print(sn)
-    '''
-    for i in sn:
-        print(i['zpsys'])
-    '''
     res, fit = fitting.nest_lc(sn, model, vparam_names, bounds,
                                guess_amplitude_bound=True,
                                priors=priorfn, minsnr=4,
                                npoints=npoints, maxiter=maxiter,
                                verbose=verbose)
-    print("reached here")
     #print ("fit2: ", time.time())
     tend = time.time()
     if verbose : print("  Total Fitting time = %.1f sec"%(tend-tstart))
@@ -402,6 +395,42 @@ def get_marginal_pdfs( res, nbins=51, verbose=True ):
     return( pdfdict )
 
 
+def inflateUncert(sn):
+    #Blowing up uncertainties...
+    '''
+    import matplotlib.pyplot as plt
+    plotting.plot_lc(sn)
+    plt.show()
+    '''
+
+    signifFluxEnd = 0
+    firstSigFound = False
+    lastSigFound = False
+
+    #first we iterate through backwards looking for the last significant flux measurement
+    sn.reverse()
+    for i in range(len(sn)):
+        aRowI = sn[i]
+        if( aRowI['flux'] / aRowI['fluxerr'] > 3):
+            signifFluxEnd = len(sn) - i
+            break
+    sn.reverse()
+    signifFluxEnd = sn[signifFluxEnd-1]
+
+    #now we iterate through until first signif flux is reached
+    for i in sn:
+        if( i['flux'] / i['fluxerr'] > 3):
+            firstSigFound = True
+        if(firstSigFound):
+            #once first signif flux found, start blowing up uncertainties until last signif flux
+            if(i == signifFluxEnd):
+                break
+            else:
+                i['fluxerr'] = i['fluxerr']*3
+                continue
+    #plotting.plot_lc(sn)
+    #plt.show()
+    return(sn)
 
 
 def plot_marginal_pdfs( res, nbins=101, **kwargs):
@@ -527,64 +556,11 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     logz = {'Ia': [], 'II': [], 'Ibc': []}
     bestlogz = -np.inf
 
-#-------------------------------------------------------------------------------
-#Blowing up uncertainties...
-    import matplotlib.pyplot as plt
-    #print (sn)
-    #plotting.plot_lc(sn)
-    #plt.show()
-
-    signifFluxEnd = 0
-    firstSigFound = False
-    lastSigFound = False
-
-    #first we iterate through backwards looking for the last significant flux measurement
-    sn.reverse()
-    for i in range(len(sn)):
-        if(lastSigFound):
-            break
-        aRowI = sn[i]
-        nextFlux = 0
-        for j in range(i+1,len(sn)):
-            aRowJ = sn[j]
-            if(aRowI['band'] == aRowJ['band']):
-                nextFlux = aRowJ['flux']
-                fluxDiff = nextFlux / aRowI['flux']
-                if(abs(fluxDiff) > 3): #if the difference is more than a factor of 3, it's significant
-                    signifFluxEnd = len(sn)-i #some reverse mumbo jumbo
-                    lastSigFound = True
-                break
-    sn.reverse()
-    signifFluxEnd = sn[signifFluxEnd] #gives correct end after rereversing
-    
-    #now we iterate through until first signif flux is reached
-    for i in range(len(sn)):
-        aRowI = sn[i]
-        if not firstSigFound:
-            nextFlux = 0
-            for j in range(i+1,len(sn)):
-                aRowJ = sn[j]
-                if(aRowI['band'] == aRowJ['band']):
-                    nextFlux = aRowJ['flux']
-                    fluxDiff = nextFlux / aRowI['flux']
-                    if(abs(fluxDiff) > 3):
-                        firstSigFound = True
-                    break
-        if(firstSigFound):
-            #once first signif flux found, start blowing up uncertainties until last signif flux
-            if(aRowI == signifFluxEnd):
-                #print ("breaking")
-                break
-            else:
-                #print (aRowI)
-                continue
-
+    sn = inflateUncert(sn)
 
 #-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-    
-    #nonparallelize code
+    '''
+    #serial code
     for modelsource in allmodelnames:
         if verbose >1:
             dt = time.time() - tstart
@@ -631,11 +607,10 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
         for i in range(1, len(logz[modelsource])):
             logztype[modelsource] = np.logaddexp(
                 logztype[modelsource], logz[modelsource][i])
-    
-    
-#-------------------------------------------------------------------------------
-    #parallelize code
     '''
+#-------------------------------------------------------------------------------
+    #parallelized code
+    
     res=parallelize.foreach(allmodelnames,_parallel,[verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates])
     print('------------------------------')
     dt = time.time() - tstart
@@ -673,7 +648,7 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
         for i in range(1, len(logz[modelsource])):
             logztype[modelsource] = np.logaddexp(
                 logztype[modelsource], logz[modelsource][i])
-    '''
+    
 #-------------------------------------------------------------------------------
     # define the total evidence (final denominator in Bayes theorem) and then
     # the classification probabilities
@@ -770,7 +745,12 @@ def testClassification():
     import imp
     read_des_datfile = imp.load_source("read_des_datfile","classTest/read_des_datfile.py")
 
-    testSNfile = "classTest/simulatedChallange/DES_BLIND+HOSTZ/DES_SN180017.DAT"
+    theNpoints = 20
+    theMaxIter = 5000
+    theNsteps = 1000
+    theTemplate = 'psnid'
+
+    testSNfile = "classTest/simulatedChallange/DES_SN180720.DAT"
     zerror = getTheZerr(testSNfile) #this is because the snana read strips the zerror
     metadata, data = read_des_datfile.read_des_datfile(testSNfile)
     theID = metadata["SNID"]
@@ -778,8 +758,8 @@ def testClassification():
     print("Classifying, this may take awhile...")
     test_out = classify(data, zhost=metadata['HOST_GALAXY_PHOTO-Z'], zhosterr=zerror, 
                         zminmax=[metadata['HOST_GALAXY_PHOTO-Z'] - (2*zerror),
-                        metadata['HOST_GALAXY_PHOTO-Z'] + (2*zerror)], npoints=20, maxiter=5000, 
-                        nsteps_pdf=1000, templateset='snana', excludetemplates=[theID], verbose=0)
+                        metadata['HOST_GALAXY_PHOTO-Z'] + (2*zerror)], npoints=theNpoints, maxiter=theMaxIter, 
+                        nsteps_pdf=theNsteps, templateset=theTemplate, excludetemplates=[theID], verbose=0)
 
     print("Successful classification!")
 
