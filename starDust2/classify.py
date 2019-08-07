@@ -487,7 +487,7 @@ def _parallel(args):
         outdict = {'key':modelsource,'sn': sn, 'res': res, 'fit': fit,'pdf': pdf, 'priorfn': priorfn}
     except:
         print("Some serious problem with %s, skipping..."%modelsource)
-        outdict= {'key':None,'sn': None, 'res': None, 'fit': None,'pdf': None, 'priorfn': None}
+        outdict= {'key':modelsource,'sn': None, 'res': None, 'fit': None,'pdf': None, 'priorfn': None}
     #({'sn': sn, 'res': res, 'fit': fit,'pdf': pdf, 'priorfn': priorfn})
     return(parallelize.parReturn(outdict))
 
