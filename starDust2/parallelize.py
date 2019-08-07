@@ -52,6 +52,7 @@ def parReturn(toReturn):
             if _pickleable(toReturn[key]):
                 final[key]=toReturn[key]
             else:
+                #print('king jamesssssssss')
                 print("Had to remove object %s from return dictionary, as it was not pickleable."%key)
 
         if not name:
