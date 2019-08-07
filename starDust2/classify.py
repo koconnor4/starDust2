@@ -512,6 +512,7 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
              zminmax=[1.488,1.493], npoints=100, maxiter=10000,
              templateset='SNANA', excludetemplates=[],
              nsteps_pdf=101, verbose=True):
+    print('test!!!!!!!')
     """  Collect the bayesian evidence for all SN sub-classes.
     :param sn:
     :param zhost:
@@ -610,7 +611,6 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     '''
 #-------------------------------------------------------------------------------
     #parallelized code
-    
     res=parallelize.foreach(allmodelnames,_parallel,[verbose,sn,zhost,zhosterr,t0_range,zminmax,npoints,maxiter,nsteps_pdf,excludetemplates])
     print('------------------------------')
     dt = time.time() - tstart
@@ -690,9 +690,14 @@ def plot_fits(classdict, nshow=2, verbose=False, **kwarg ):
 
     bestIamod, bestIbcmod, bestIImod = get_bestfit_modelnames(
         classdict, verbose=verbose)
-    fitIa = classdict[bestIamod]['fit']
-    fitIbc = classdict[bestIbcmod]['fit']
-    fitII = classdict[bestIImod]['fit']
+    
+    #fitIa = classdict[bestIamod]['fit']
+    #fitIbc = classdict[bestIbcmod]['fit']
+    #fitII = classdict[bestIImod]['fit']
+
+    fitIa = classdict[bestIamod]['res']
+    fitIbc = classdict[bestIbcmod]['res']
+    fitII = classdict[bestIImod]['res']
 
     sn = classdict[bestIamod]['sn']
     if nshow == 3:
