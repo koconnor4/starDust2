@@ -623,7 +623,7 @@ def classify(sn, zhost=1.491, zhosterr=0.003, t0_range=None,
     res={res[i]['key']:res[i] for i in range(len(res))}
     for modelsource in allmodelnames:
         print(modelsource)
-        if res['sn'] is None:
+        if res[modelsource]['sn'] is None:
             continue
         outdict[modelsource] = {'sn': res[modelsource]['sn'], 'res': res[modelsource]['res'],
                                 'pdf': res[modelsource]['pdf']}
